@@ -14,6 +14,7 @@ import {
   AppState,
   GenerateVideoParams,
   GenerationMode,
+  ImageFile,
   Resolution,
   VideoFile,
 } from './types';
@@ -28,6 +29,7 @@ const App: React.FC = () => {
   const [lastVideoObject, setLastVideoObject] = useState<Video | null>(null);
   const [lastVideoBlob, setLastVideoBlob] = useState<Blob | null>(null);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
+  const [imageGallery, setImageGallery] = useState<ImageFile[]>([]);
 
   // A single state to hold the initial values for the prompt form
   const [initialFormValues, setInitialFormValues] =
@@ -51,6 +53,16 @@ const App: React.FC = () => {
       }
     };
     checkApiKey();
+  }, []);
+
+  const handleAddToGallery = useCallback((newImages: ImageFile[]) => {
+    setImageGallery((prevGallery) => {
+      const existingBase64s = new Set(prevGallery.map((img) => img.base64));
+      const uniqueNewImages = newImages.filter(
+        (img) => !existingBase64s.has(img.base64),
+      );
+      return [...prevGallery, ...uniqueNewImages];
+    });
   }, []);
 
   const showStatusError = (message: string) => {
@@ -229,6 +241,8 @@ const App: React.FC = () => {
               <PromptForm
                 onGenerate={handleGenerate}
                 initialValues={initialFormValues}
+                imageGallery={imageGallery}
+                onImagesGenerated={handleAddToGallery}
               />
             </div>
           </>

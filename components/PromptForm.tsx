@@ -18,6 +18,7 @@ import {
   ChevronDownIcon,
   FilmIcon,
   FramesModeIcon,
+  PhotoIcon,
   PlusIcon,
   RectangleStackIcon,
   ReferencesModeIcon,
@@ -29,6 +30,7 @@ import {
   XMarkIcon,
 } from './icons';
 import ImageGenerationDialog from './ImageGenerationDialog';
+import ImageGalleryDialog from './ImageGalleryDialog';
 
 const aspectRatioDisplayNames: Record<AspectRatio, string> = {
   [AspectRatio.LANDSCAPE]: 'Landscape (16:9)',
@@ -221,11 +223,15 @@ const VideoUpload: React.FC<{
 interface PromptFormProps {
   onGenerate: (params: GenerateVideoParams) => void;
   initialValues?: GenerateVideoParams | null;
+  imageGallery: ImageFile[];
+  onImagesGenerated: (images: ImageFile[]) => void;
 }
 
 const PromptForm: React.FC<PromptFormProps> = ({
   onGenerate,
   initialValues,
+  imageGallery,
+  onImagesGenerated,
 }) => {
   const [prompt, setPrompt] = useState(initialValues?.prompt ?? '');
   const [model, setModel] = useState<VeoModel>(
@@ -263,6 +269,7 @@ const PromptForm: React.FC<PromptFormProps> = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isModeSelectorOpen, setIsModeSelectorOpen] = useState(false);
   const [isImageGenDialogOpen, setIsImageGenDialogOpen] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modeSelectorRef = useRef<HTMLDivElement>(null);
 
@@ -421,6 +428,7 @@ const PromptForm: React.FC<PromptFormProps> = ({
       );
     }
     if (generationMode === GenerationMode.REFERENCES_TO_VIDEO) {
+      const remainingSlots = 3 - referenceImages.length;
       return (
         <div className="mb-3 p-4 bg-[#2c2c2e] rounded-xl border border-gray-700">
           <div className="flex flex-wrap items-center justify-center gap-2">
@@ -437,20 +445,29 @@ const PromptForm: React.FC<PromptFormProps> = ({
                 }
               />
             ))}
-            {referenceImages.length < 3 && (
-              <ImageUpload
-                label="Add Reference"
-                onSelect={(img) => setReferenceImages((imgs) => [...imgs, img])}
-              />
-            )}
-            {referenceImages.length < 3 && (
-              <button
-                type="button"
-                onClick={() => setIsImageGenDialogOpen(true)}
-                className="w-28 h-20 bg-indigo-600/20 hover:bg-indigo-600/40 border-2 border-dashed border-indigo-500/50 rounded-lg flex flex-col items-center justify-center text-indigo-300 hover:text-white transition-colors">
-                <WandIcon className="w-6 h-6" />
-                <span className="text-xs mt-1">Generate</span>
-              </button>
+            {remainingSlots > 0 && (
+              <>
+                <ImageUpload
+                  label="Add Reference"
+                  onSelect={(img) =>
+                    setReferenceImages((imgs) => [...imgs, img])
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsGalleryOpen(true)}
+                  className="w-28 h-20 bg-purple-600/20 hover:bg-purple-600/40 border-2 border-dashed border-purple-500/50 rounded-lg flex flex-col items-center justify-center text-purple-300 hover:text-white transition-colors">
+                  <PhotoIcon className="w-6 h-6" />
+                  <span className="text-xs mt-1">From Gallery</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsImageGenDialogOpen(true)}
+                  className="w-28 h-20 bg-indigo-600/20 hover:bg-indigo-600/40 border-2 border-dashed border-indigo-500/50 rounded-lg flex flex-col items-center justify-center text-indigo-300 hover:text-white transition-colors">
+                  <WandIcon className="w-6 h-6" />
+                  <span className="text-xs mt-1">Generate</span>
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -529,7 +546,18 @@ const PromptForm: React.FC<PromptFormProps> = ({
           onAddImages={(newImages) => {
             setReferenceImages((prev) => [...prev, ...newImages].slice(0, 3));
           }}
+          onImagesGenerated={onImagesGenerated}
           onClose={() => setIsImageGenDialogOpen(false)}
+        />
+      )}
+      {isGalleryOpen && (
+        <ImageGalleryDialog
+          images={imageGallery}
+          maxSelectable={3 - referenceImages.length}
+          onAddImages={(newImages) => {
+            setReferenceImages((prev) => [...prev, ...newImages].slice(0, 3));
+          }}
+          onClose={() => setIsGalleryOpen(false)}
         />
       )}
       {isSettingsOpen && (
